@@ -4,11 +4,9 @@
 #include <entt/entt.hpp>
 #include "engine/game.hpp"
 
-#include "utils/debug.hpp"
 #include "utils/globals.hpp"
 
 #include "components/logic.hpp"
-#include "components/objects.hpp"
 #include "components/movement.hpp"
 #include "components/rendering.hpp"
 

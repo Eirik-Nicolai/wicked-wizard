@@ -6,7 +6,6 @@
 #include <vector>
 #include <string>
 
-#include "olcPixelGameEngine.h"
 #include "globals.hpp"
 
 class Debugger
@@ -16,26 +15,6 @@ class Debugger
         {
             static Debugger instance;
             return instance;
-        }
-        void Print(olc::PixelGameEngine *pge, float posx, float posy)
-        {
-            auto [winx, winy] = pge->GetWindowSize();
-            winx *= posx;
-            winy *= posy;
-            int offs = 1;
-            pge->DrawString(winx, winy, "-----------------------",olc::WHITE);
-            for (auto &s: debug_lines)
-            {
-                pge->DrawString(
-                    winx,
-                    winy + offs*PIXEL_OFFS,
-                    s,
-                    olc::WHITE
-                );
-                offs++;
-            }
-            pge->DrawString(winx, winy + (offs) * PIXEL_OFFS,"-----------------------",olc::WHITE);
-
         }
         void Clear()
         {

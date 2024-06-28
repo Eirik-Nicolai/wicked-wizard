@@ -12,7 +12,7 @@
 
 #include "components/combat.hpp"
 #include "components/globals.hpp"
-#include "components/equipment.hpp"
+
 
 using func = std::function<void(void)>;
 

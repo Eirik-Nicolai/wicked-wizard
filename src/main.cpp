@@ -7,7 +7,7 @@
 auto main(int argc, char *argv[]) -> int
 {
     DungeonThing demo;
-    if (demo.Construct(1600, 900, 1, 1))
+    if (demo.Construct(1600, 900, 1, 1, true))
         demo.Start();
     return 0;
 }

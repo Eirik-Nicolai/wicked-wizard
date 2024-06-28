@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS "-O0")
 set(CXX_STANDARD "C++17")
 
 # add_subdirectory(src)
-project(dungeon_game)
+project(wicked_wizard)
 
 set(SRC_MAIN src/main.cpp)
 
@@ -21,13 +21,7 @@ set(SRC_ENGINE
     src/engine/menu.cpp
     src/engine/keypress.cpp
     src/engine/initialize.cpp
-    src/engine/state_combat.cpp
-    src/engine/state_paused.cpp
-    src/engine/state_walking.cpp
     src/engine/rendering/render.cpp
-    src/engine/rendering/render_combat.cpp
-    src/engine/rendering/render_paused.cpp
-    src/engine/rendering/render_walking.cpp
 )
 
 set(SRC_UTILS
@@ -35,23 +29,19 @@ set(SRC_UTILS
 )
 
 set(SRC_SYSTEMS
-    src/systems/AI/ai.cpp
     src/systems/logic/logic.cpp
-    src/systems/movement/movement.cpp
-    src/systems/combat/action_perform.cpp
-    src/systems/combat/buff_debuff.cpp
-    src/systems/combat/target_death.cpp
 )
 
 set(SRC_GAME ${SRC_MAIN} ${SRC_ENGINE} ${SRC_UTILS} ${SRC_SYSTEMS})
 
 message ("Adding executable...")
-add_executable(game ${SRC_GAME})
+add_executable(wicked-wizard ${SRC_GAME})
 
 message("Linking dirs....")
 
 target_link_libraries(
-    game
+    wicked-wizard
+    "${CMAKE_SOURCE_DIR}/lib/libbox2d.a"
     GL
     GLU
     X11
@@ -60,7 +50,7 @@ target_link_libraries(
     stdc++fs
 )
 
-target_include_directories(game
+target_include_directories(wicked-wizard
     PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/include"

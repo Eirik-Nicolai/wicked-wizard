@@ -1,9 +1,12 @@
 #ifndef GAME_H_
 #define GAME_H_
 
+#include "olc/olcPixelGameEngine.h"
+#include "olc/olcPGEX_TransformedView.h"
+#include "olc/olcPGEX_Graphics2D.h"
+
 #include <queue>
 #include <entt/entt.hpp>
-#include "olcPixelGameEngine.h"
 
 #include "menu.hpp"
 #include "utils/utils.hpp"
@@ -11,15 +14,11 @@
 #include "types_and_defines.hpp"
 #include "components/combat.hpp"
 #include "components/globals.hpp"
-#include "components/equipment.hpp"
 #include "components/rendering.hpp"
 
-#include "systems/AI/ai.hpp"
 #include "systems/logic/logic.hpp"
-#include "systems/movement/movement.hpp"
-#include "systems/combat/buff_debuff.hpp"
-#include "systems/combat/target_death.hpp"
-#include "systems/combat/action_perform.hpp"
+
+#include "box2d/box2d.h"
 
 class DungeonThing : public olc::PixelGameEngine
 {
@@ -43,16 +42,8 @@ class DungeonThing : public olc::PixelGameEngine
 
 
         void on_render_paused();
-        void on_render_paused_stats();
-        void on_render_paused_overview();
-        void on_render_paused_inventory();
-        void on_render_paused_equipment();
-
 
         void on_render_combat();
-
-        void on_render_transition_to_walking_from_combat(float dt);
-        void on_render_transition_combat(float dt);
 
         void on_userinput_walking();
         void on_userinput_paused();
@@ -62,6 +53,9 @@ class DungeonThing : public olc::PixelGameEngine
 
     private:
         entt::registry m_reg;
+        std::unique_ptr<b2World> m_physics;
+
+
         void render_windows();
 
         State CURR_STATE;
@@ -86,13 +80,7 @@ class DungeonThing : public olc::PixelGameEngine
         // EQUIPMENT AND INVENTORY
         SimpleMenu m_pause_menu;
 
-        EquipmentMenu m_equipment_menu;
-        ScrollableMenu m_inventory_menu;
-        equiptype m_curr_equip;
-        std::vector<entt::entity> m_inventory_list;
-
     public:
-        std::vector<std::string> m_debug;
         std::string get_name(const entt::entity&, std::string = "UNNAMED_ENTITY");
 
         bool has_enough_resources(entt::entity&, entt::entity&);
@@ -108,13 +96,6 @@ class DungeonThing : public olc::PixelGameEngine
             FillRect(x+5,y+5,
                      (w-5)*get_percentage(c.curr, c.max)-5, h-10, olc::WHITE);
         }
-
-        void draw_effect_icon(const std::string&, int x, int y, olc::Pixel inner, olc::Pixel outer);
-
-        //TODO a bit grim doing it like this
-        bool m_equip_finger_left;
-        bool m_equip_head_left;
-
 
         template <typename component>
         bool has(entt::entity &ent)
@@ -160,6 +141,7 @@ class DungeonThing : public olc::PixelGameEngine
     private: //DEBUGGING HELPER FUNCTIONS
         entt::entity create_enemy(std::string, std::string, int);
         entt::entity create_ally(std::string, std::string, int);
+
 };
 
 

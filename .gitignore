@@ -12,3 +12,4 @@ _deps
 build
 output.txt
 .cache/*
+*.sh
