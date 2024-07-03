@@ -16,6 +16,10 @@ project(wicked_wizard)
 
 set(SRC_MAIN src/main.cpp)
 
+set(SRC_COMPONENTS
+    src/components/statemachine.cpp
+)
+
 set(SRC_ENGINE
     src/engine/game.cpp
     src/engine/menu.cpp
@@ -36,7 +40,7 @@ set(SRC_SYSTEMS
     src/systems/statemachine/system_statechange.cpp
 )
 
-set(SRC_GAME ${SRC_MAIN} ${SRC_ENGINE} ${SRC_UTILS} ${SRC_SYSTEMS})
+set(SRC_GAME ${SRC_MAIN} ${SRC_ENGINE} ${SRC_COMPONENTS} ${SRC_UTILS} ${SRC_SYSTEMS})
 
 message ("Adding executable...")
 add_executable(wicked-wizard ${SRC_GAME})

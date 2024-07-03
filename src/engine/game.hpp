@@ -8,8 +8,10 @@
 #include <queue>
 #include <entt/entt.hpp>
 
-#include "menu.hpp"
 #include "utils/utils.hpp"
+#include "utils/debug.hpp"
+
+#include "menu.hpp"
 
 #include "types_and_defines.hpp"
 #include "components/combat.hpp"
@@ -35,7 +37,7 @@ class Game : public olc::PixelGameEngine
 
         std::unique_ptr<AssetManager> m_assets;
 
-        std::vector<state> states;
+        // std::vector<state> states;
 
     public:
         bool OnUserCreate() override;

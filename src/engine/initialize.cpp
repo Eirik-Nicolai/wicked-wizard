@@ -49,23 +49,35 @@ void Game::on_load_init()
     DEBUG("loading spritesheet");
 
     size_t i;
-    m_assets->load("assets/spritesheets/link.png", i);
+    if(!m_assets->load("assets/spritesheets/link.png", i))
+        throw std::runtime_error("Couldnt load link.png");
+
+
+    DEBUG("link sheet indx " + std::to_string(i));
+
+    size_t i_stickboy;
+    if(!m_assets->load("assets/spritesheets/stickboy.png", i_stickboy))
+        throw std::runtime_error("Couldnt load stickboy");
+
+    DEBUG("stickboy sheet indx " + std::to_string(i_stickboy));
 
     m_reg.emplace<player_sheet>(
         player,
-        i
+        i_stickboy
     );
 
     DEBUG("creating animation frames");
-    auto walking_frames = std::vector<animation_frame>{
-        {olc::vi2d(1,140),   olc::vi2d(45,45), 0.2f, std::vector<hitbox>()},
-        {olc::vi2d(45,140),  olc::vi2d(33,45), 0.2f, std::vector<hitbox>()},
-        {olc::vi2d(78,140),  olc::vi2d(45,45), 0.2f, std::vector<hitbox>()},
-        {olc::vi2d(123,140), olc::vi2d(33,45), 0.2f, std::vector<hitbox>()},
+    auto walking_frames_east = std::vector<animation_frame>{
+        {olc::vi2d(1,64),   olc::vi2d(64,64), 0.2f, std::vector<hitbox>()},
+        {olc::vi2d(65,64),  olc::vi2d(64,64), 0.2f, std::vector<hitbox>()},
+    };
+    auto walking_frames_west = std::vector<animation_frame>{
+        {olc::vi2d(1,64*2),   olc::vi2d(64,64), 0.2f, std::vector<hitbox>()},
+        {olc::vi2d(65,64*2),  olc::vi2d(64,64), 0.2f, std::vector<hitbox>()},
     };
 
     auto idle_frames = std::vector<animation_frame>{
-        {olc::vi2d(1,1),   olc::vi2d(25,50), 10, std::vector<hitbox>()},
+        {olc::vi2d(1,1),   olc::vi2d(64,64), 10, std::vector<hitbox>()},
     };
 
     auto attack_frames = std::vector<animation_frame>{
@@ -75,24 +87,39 @@ void Game::on_load_init()
 
     DEBUG("creating animation entities");
 
-    auto walking_animation = m_reg.create();
+    auto walking_animation_east = m_reg.create();
+    auto walking_animation_west = m_reg.create();
+
     auto idle_animation = m_reg.create();
+
     auto attack_animation = m_reg.create();
 
     m_reg.emplace<animation>(
-        walking_animation,
-        i,
+        walking_animation_east,
+        i_stickboy,
         "walking",
         (uint8_t)0,
         0.f,
 
-        walking_frames.size(),
-        walking_frames
+        walking_frames_east.size(),
+        walking_frames_east
     );
 
     m_reg.emplace<animation>(
+        walking_animation_west,
+        i_stickboy,
+        "walking",
+        (uint8_t)0,
+        0.f,
+
+        walking_frames_west.size(),
+        walking_frames_west
+    );
+
+
+    m_reg.emplace<animation>(
         idle_animation,
-        i,
+        i_stickboy,
         "idle",
         (uint8_t)0,
         0.f,
@@ -103,7 +130,7 @@ void Game::on_load_init()
 
     m_reg.emplace<animation>(
         attack_animation,
-        i,
+        i_stickboy,
         "attack",
         (uint8_t)0,
         0.f,
@@ -112,70 +139,128 @@ void Game::on_load_init()
         idle_frames
     );
 
-    states.emplace_back(state {
-        .id = 0,
-        .name = "idle",
-        .on_enter = [idle_animation](entt::registry& reg, entt::entity &ent){
-            DEBUG("CHANGING TO IDLE ANIM");
-            reg.replace<current_animation>(ent, idle_animation);
-        },
-        .on_exit = [](entt::registry& reg, entt::entity &ent){},
-        .validator = [](entt::registry& reg, entt::entity &ent) // change input method
-        {
-            auto box2d = reg.get<box2d_ref>(ent);
-            auto vel = box2d.ref->GetLinearVelocity().x;
-            //DEBUG("CHECK IDLE " + std::to_string(vel));
-            return vel < 50 && vel > -50;
-        },
+    m_reg.emplace<current_animation>(
+        player,
+        idle_animation
+    );
 
-    });
-    states.emplace_back(state {
-        .id = 1,
-        .name = "walking",
-        .on_enter = [walking_animation](entt::registry& reg, entt::entity &ent){
-            DEBUG("CHANGING TO WALKING ANIM");
-            reg.replace<current_animation>(ent, walking_animation);
-        },
-        .on_exit = [](entt::registry& reg, entt::entity &ent){},
+    State idle = State(STATE::IDLE, "idle",
+                       [idle_animation](entt::registry& reg, entt::entity &ent){
+                           DEBUG("CHANGING TO IDLE ANIM");
+                           reg.replace<current_animation>(ent, idle_animation);
+                       },
+                       [](entt::registry&, entt::entity &){},
+                       [](entt::registry& reg, entt::entity &ent) // change input method
+                       {
+                           auto box2d = reg.get<box2d_ref>(ent);
+                           auto vel = box2d.ref->GetLinearVelocity().x;
+                           // DEBUG("CHECK IDLE " + std::to_string(vel));
+                           return vel < 50 && vel > -50;
+                       });
 
-        .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
-            auto box2d = reg.get<box2d_ref>(ent);
-            auto vel = box2d.ref->GetLinearVelocity().x;
-            //DEBUG("CHECK WALKING " + std::to_string(vel));
-            return vel >= 50 || vel <= -50;
-        },
-    });
-    states.emplace_back(state {
-        .id = 2,
-        .name = "attack",
-        .on_enter = [attack_animation](entt::registry& reg, entt::entity &ent){
-            DEBUG("CHANGING TO WALKING ANIM");
-            reg.replace<current_animation>(ent, attack_animation);
-        },
-        .on_exit = [](entt::registry& reg, entt::entity &ent){},
+    State walking_east = State(STATE::WALKING_EAST, "walking_east",
+                          [walking_animation_east](entt::registry& reg, entt::entity &ent){
+                              DEBUG("CHANGING TO WALKING EAST ANIM");
+                              reg.replace<current_animation>(ent, walking_animation_east);
+                          },
+                          [](entt::registry&, entt::entity &){},
+                          [](entt::registry& reg, entt::entity &ent){ // change input method
+                              auto box2d = reg.get<box2d_ref>(ent);
+                              auto vel = box2d.ref->GetLinearVelocity().x;
+                              //DEBUG("CHECK WALKING " + std::to_string(vel));
+                              return vel >= 50;
+                          });
 
-        .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
-            auto box2d = reg.get<box2d_ref>(ent);
-            auto vel = box2d.ref->GetLinearVelocity().x;
-            //DEBUG("CHECK WALKING " + std::to_string(vel));
-            return false;
-        },
-    });
+    State walking_west = State(STATE::WALKING_WEST, "walking_west",
+                          [walking_animation_west](entt::registry& reg, entt::entity &ent){
+                              DEBUG("CHANGING TO WALKING WEST ANIM");
+                              reg.replace<current_animation>(ent, walking_animation_west);
+                          },
+                          [](entt::registry&, entt::entity &){},
+                          [](entt::registry& reg, entt::entity &ent){ // change input method
+                              auto box2d = reg.get<box2d_ref>(ent);
+                              auto vel = box2d.ref->GetLinearVelocity().x;
+                              //DEBUG("CHECK WALKING " + std::to_string(vel));
+                              return vel <= -50;
+                          });
 
-    m_reg.emplace<current_animation>(player, idle_animation);
-    m_reg.emplace<curr_state>(player, curr_state{.id=0,.name="idle"});
+    walking_west.add_termination(idle);
+    walking_east.add_termination(idle);
+
+    idle.add_termination(walking_west);
+    idle.add_termination(walking_east);
+
+    StateManager man = StateManager(idle, std::vector<State>{
+            idle,
+            walking_west,
+            walking_east,
+        });
+
+    m_reg.emplace<StateManager>(
+        player,
+        man
+    );
+    DEBUG(idle);
+    DEBUG(walking_west);
+    DEBUG(walking_east);
+
+    DEBUG(man);
+
+    // states.emplace_back(state {
+    //     .id = 0,
+    //     .name = "idle",
+    //     .on_enter = [idle_animation](entt::registry& reg, entt::entity &ent){
+    //         // DEBUG("CHANGING TO IDLE ANIM");
+    //         reg.replace<current_animation>(ent, idle_animation);
+    //     },
+    //     .on_exit = [](entt::registry& reg, entt::entity &ent){},
+    //     .validator = [](entt::registry& reg, entt::entity &ent) // change input method
+    //     {
+    //         auto box2d = reg.get<box2d_ref>(ent);
+    //         auto vel = box2d.ref->GetLinearVelocity().x;
+    //         // DEBUG("CHECK IDLE " + std::to_string(vel));
+    //         return vel < 50 && vel > -50;
+    //     },
+
+    // });
+    // states.emplace_back(state {
+    //     .id = 1,
+    //     .name = "walking",
+    //     .on_enter = [walking_animation](entt::registry& reg, entt::entity &ent){
+    //         // DEBUG("CHANGING TO WALKING ANIM");
+    //         reg.replace<current_animation>(ent, walking_animation);
+    //     },
+    //     .on_exit = [](entt::registry& reg, entt::entity &ent){},
+
+    //     .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
+    //         auto box2d = reg.get<box2d_ref>(ent);
+    //         auto vel = box2d.ref->GetLinearVelocity().x;
+    //         //DEBUG("CHECK WALKING " + std::to_string(vel));
+    //         return vel >= 50 || vel <= -50;
+    //     },
+    // });
+    // states.emplace_back(state {
+    //     .id = 2,
+    //     .name = "attack",
+    //     .on_enter = [attack_animation](entt::registry& reg, entt::entity &ent){
+    //         // DEBUG("CHANGING TO WALKING ANIM");
+    //         reg.replace<current_animation>(ent, attack_animation);
+    //     },
+    //     .on_exit = [](entt::registry& reg, entt::entity &ent){},
+
+    //     .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
+    //         auto box2d = reg.get<box2d_ref>(ent);
+    //         auto vel = box2d.ref->GetLinearVelocity().x;
+    //         //DEBUG("CHECK WALKING " + std::to_string(vel));
+    //         return false;
+    //     },
+    // });
+
+    // m_reg.emplace<current_animation>(player, idle_animation);
+    // m_reg.emplace<curr_state>(player, curr_state{.id=0,.name="idle"});
 
 
-
-
-
-
-
-
-
-
-
-
+    DEBUG("Loading complete");
 
     auto ground = m_reg.create();
 

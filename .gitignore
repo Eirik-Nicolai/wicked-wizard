@@ -13,3 +13,4 @@ build
 output.txt
 .cache/*
 *.sh
+*.piskel

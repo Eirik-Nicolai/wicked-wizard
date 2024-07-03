@@ -3,19 +3,23 @@
 void Game::render()
 {
     SetPixelMode(olc::Pixel::Mode::NORMAL);
-
     auto offs = tv.GetTopLeftTile();
 
     for(auto [ent, box2d, curr_anim] : m_reg.view<box2d_ref, current_animation>().each())
     {
         auto anim = m_reg.get<animation>(curr_anim.ent);
-        DrawString({300,400}, "pos: " + anim.name);
         auto pos = box2d.ref->GetPosition();
         auto size = box2d.size;
 
+        // DEBUG("CURR ANIM " + anim.name);
+
         auto curr_frame = anim.frames[anim.current_frame];
 
+        // DEBUG("RETRIEVING SHEET " + std::to_string(anim.sheet));
+
         auto sheet = m_assets->get(anim.sheet).lock().get();
+
+        //DEBUG("RETRIEVING SHEET " + sheet);
 
         tv.DrawPartialDecal(
             screenspace(offs, pos, size),

@@ -33,13 +33,13 @@ bool tryget_component(entt::registry &reg, const entt::entity &ent, component &c
 
 //TODO check reference
 template <typename component>
-component get(entt::registry &reg, const entt::entity e)
+component get(entt::registry &reg, entt::entity &e)
 {
   return reg.get<component>(e);
 }
 
 template <typename component>
-const component cget(entt::registry &reg, const entt::entity e)
+const component cget(entt::registry &reg, const entt::entity &e)
 {
   return reg.get<component>(e);
 }

@@ -3,6 +3,7 @@
 
 #include <entt/entt.hpp>
 
+#include "utils/ecs.hpp"
 #include "utils/debug.hpp"
 #include "utils/globals.hpp"
 

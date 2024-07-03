@@ -70,11 +70,10 @@ bool Game::OnUserUpdate(float dt)
 
     on_progress_animations(m_reg, dt);
 
-
-    on_state_check(m_reg, states);
+    on_state_check(m_reg);
 
     // FIXME move this later
-    on_state_change(m_reg, states);
+    on_state_change(m_reg);
 
 
     auto size = GetScreenSize();
