@@ -2,8 +2,8 @@
 #define GAME_H_
 
 #include "olc/olcPixelGameEngine.h"
+#include "olc/olcPGEX_QuickGUI.h"
 #include "olc/olcPGEX_TransformedView.h"
-#include "olc/olcPGEX_Graphics2D.h"
 
 #include <queue>
 #include <entt/entt.hpp>
@@ -13,17 +13,29 @@
 
 #include "types_and_defines.hpp"
 #include "components/combat.hpp"
+#include "components/assets.hpp"
 #include "components/globals.hpp"
 #include "components/rendering.hpp"
+#include "components/statemachine.hpp"
+
+//#include "engine/animation_manager.hpp"
+#include "engine/asset_manager.hpp"
 
 #include "systems/logic/logic.hpp"
+#include "systems/movement/moving.hpp"
+#include "systems/animation/system_animation.hpp"
+#include "systems/statemachine/system_statechange.hpp"
 
 #include "box2d/box2d.h"
 
-class DungeonThing : public olc::PixelGameEngine
+class Game : public olc::PixelGameEngine
 {
     public:
-        DungeonThing();
+        Game();
+
+        std::unique_ptr<AssetManager> m_assets;
+
+        std::vector<state> states;
 
     public:
         bool OnUserCreate() override;
@@ -38,12 +50,7 @@ class DungeonThing : public olc::PixelGameEngine
         void on_load_init();
         void on_load_combat();
 
-        void on_render_walking();
-
-
-        void on_render_paused();
-
-        void on_render_combat();
+        void render();
 
         void on_userinput_walking();
         void on_userinput_paused();
@@ -55,39 +62,33 @@ class DungeonThing : public olc::PixelGameEngine
         entt::registry m_reg;
         std::unique_ptr<b2World> m_physics;
 
-
-        void render_windows();
-
-        State CURR_STATE;
-        State NEXT_STATE;
-
-        float m_fElapsedTimeSinceTick;
+        olc::TileTransformedView tv;
+        olc::QuickGUI::Manager debugger;
+        std::unique_ptr<olc::QuickGUI::Label> l;
 
         entt::entity m_player;
 
-        // TODO move to ctx and refactor
-        float m_transition_progress;
-        float m_transition_acc;
-        float m_transition_time;
-        float m_elapsed_transition_time;
+        GameState CURR_STATE;
+        GameState NEXT_STATE;
 
-        // COMBAT
-        std::vector<CombatMenu> m_combat_menus;
-        TargetMenu m_target_menu;
-        int m_curr_menu;
-        int m_curr_enemies;
+        float m_animElapsed;
+        float m_fPhysicsElapsedTime;
+        const float ANIM_TICK = 1.f / 5.f;
+        const float PHYSICS_TICK = 1.f / 120.f;
 
         // EQUIPMENT AND INVENTORY
         SimpleMenu m_pause_menu;
 
     public:
-        std::string get_name(const entt::entity&, std::string = "UNNAMED_ENTITY");
-
-        bool has_enough_resources(entt::entity&, entt::entity&);
-        std::vector<entt::entity> get_inventory_of_equip_type(entt::entity&);
-        void set_equipment(const entt::entity &);
-        void update_stats_on_hover(entt::entity &);
-        void update_stats_on_select(entt::entity &);
+        // inline std::string get_name(const entt::entity &ent, std::string ret)
+        // {
+        //     visual v;
+        //     if(tryget_component(ent, v))
+        //     {
+        //         return v.name;
+        //     }
+        //     return ret;
+        // }
 
         template <typename component>
         void draw_resource_bar(component &c, int x, int y, int w, int h, olc::Pixel col)
@@ -97,50 +98,11 @@ class DungeonThing : public olc::PixelGameEngine
                      (w-5)*get_percentage(c.curr, c.max)-5, h-10, olc::WHITE);
         }
 
-        template <typename component>
-        bool has(entt::entity &ent)
-        {
-            return m_reg.all_of<component>(ent);
-        }
-
-        template <typename component>
-        bool tryget_component(entt::entity &ent, component &comp)
-        {
-            if(auto getcomp = m_reg.try_get<component>(ent);m_reg.try_get<component>(ent) != nullptr)
-            {
-                comp = (*getcomp);
-                return true;
-            }
-            return false;
-        }
-
-        template <typename component>
-        bool tryget_component(const entt::entity &ent, component &comp)
-        {
-            if(auto getcomp = m_reg.try_get<component>(ent);m_reg.try_get<component>(ent) != nullptr)
-            {
-                comp = (*getcomp);
-                return true;
-            }
-            return false;
-        }
-
-        //TODO check reference
-        template <typename component>
-        component get(entt::entity e)
-        {
-            return m_reg.get<component>(e);
-        }
-
-        template <typename component>
-        const component cget(entt::entity e) const
-        {
-            return m_reg.get<component>(e);
-        }
-
     private: //DEBUGGING HELPER FUNCTIONS
         entt::entity create_enemy(std::string, std::string, int);
         entt::entity create_ally(std::string, std::string, int);
+
+        bool follow_player = true;
 
 };
 

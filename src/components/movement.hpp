@@ -3,33 +3,16 @@
 
 #include <iostream>
 
-struct movespeed{float speed;};
+struct _controllable{};
 
-struct moveTick{float tick = 0;};
-
-struct pos{
-    int x;
-    int y;
-};
-inline std::ostream &operator<<(std::ostream &os, const pos &p) {
-    os << "{" << p.x << ", " << p.y << "}";
-    return os;
-}
-
-struct size{
-    int width;
-    int height;
+struct movement{
+    float acc;
+    float max_speed;
+    float jump_height;
 };
 
-struct dirVertical
-{
-    bool up;
-    bool down;
-};
-struct dirHorisontal
-{
-    bool left;
-    bool right;
-};
+struct _moving_left{};
+struct _moving_right{};
+struct _jump{};
 
 #endif // MOVEMENT_H_

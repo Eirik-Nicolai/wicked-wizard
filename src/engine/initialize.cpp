@@ -1,10 +1,11 @@
 #include "game.hpp"
+
 #include "initialize.hpp"
 
+void test(){}
 
-void DungeonThing::on_load_init()
+void Game::on_load_init()
 {
-
     // m_reg.on_construct<ai::_strolling>().connect<&ai::set_init_position_for_strolling>();
 
     // m_reg.on_update<affected>().connect<&combat::update_stats>();
@@ -14,268 +15,222 @@ void DungeonThing::on_load_init()
     // m_reg.ctx().emplace<TransitionState>(0.0,5.0,2.0,0.0);
     m_reg.ctx().emplace<MenuState>(0);
     //m_reg.ctx().emplace<PlayerState>(100,100,1,0);
-    m_reg.ctx().emplace<InventoryState>();
-    m_reg.ctx().emplace<EquipmentState>();
 
     auto &winsize = GetWindowSize();
 
-    // auto edgenorth = m_reg.create();
-    // m_reg.emplace<_wall>(edgenorth);
-    // m_reg.emplace<_solid>(edgenorth);
-    // m_reg.emplace<pos>(edgenorth, 0, 0);
-    // m_reg.emplace<size>(edgenorth, winsize.x, 10);
-    // auto edgesouth = m_reg.create();
-    // m_reg.emplace<_wall>(edgesouth);
-    // m_reg.emplace<_solid>(edgesouth);
-    // m_reg.emplace<pos>(edgesouth, 0, (winsize.y/GetPixelSize().x)-10);
-    // m_reg.emplace<size>(edgesouth, winsize.x, 10);
-    // auto edgewest = m_reg.create();
-    // m_reg.emplace<_wall>(edgewest);
-    // m_reg.emplace<_solid>(edgewest);
-    // m_reg.emplace<pos>(edgewest, 0, 0);
-    // m_reg.emplace<size>(edgewest, 10, winsize.y);
-    // auto edgeeast = m_reg.create();
-    // m_reg.emplace<_solid>(edgeeast);
-    // m_reg.emplace<_wall>(edgeeast);
-    // m_reg.emplace<pos>(edgeeast, (winsize.x/GetPixelSize().x)-10, 0);
-    // m_reg.emplace<size>(edgeeast, 10, winsize.y);
+    auto player = m_reg.create();
+    m_player = player;
+    m_reg.emplace<_controllable>(player);
 
-    // auto player = m_reg.create();
-    // m_reg.emplace<_player>(player);
+    m_reg.emplace<movement>(player, 100.f, 100.f, 100.f);
+    
+    // CREATE DYNAMIC BOX
+    b2BodyDef bodyDef;
+    bodyDef.type = b2_dynamicBody;
+    bodyDef.position.Set(600.f, 200.f);
+    bodyDef.angularDamping = 10000.f;
+    auto body = m_physics->CreateBody(&bodyDef);
 
-    // // MOVE
-    // m_reg.emplace<movespeed>(player, 0.1f);
+    b2PolygonShape dynamicBox;
+    auto bodySize = b2Vec2(4.0f, 6.0f);
+    dynamicBox.SetAsBox(bodySize.x, bodySize.y);
+
+    b2FixtureDef fixtureDef;
+    fixtureDef.shape = &dynamicBox;
+    fixtureDef.density = 1.0f;
+    fixtureDef.friction = 0.5f;
+
+    body->CreateFixture(&fixtureDef);
+
+    body->SetGravityScale(2);
+    m_reg.emplace<box2d_ref>(player, body, bodySize);
     // m_reg.emplace<_renderable>(player);
-    // m_reg.emplace<pos>(player, 20, 40);
-    // m_reg.emplace<simple_appearence>(player, "#");
-    // m_reg.emplace<dirVertical>(player);
-    // m_reg.emplace<dirHorisontal>(player);
-    // m_reg.emplace<moveTick>(player, 0.0f);
 
-    // // INVENTORY
-    // auto helmet = m_reg.create();
-    // m_reg.emplace<equipment_type>(helmet, equiptype::HEAD);
-    // m_reg.emplace<visual>(helmet, "HOOD");
-    // m_reg.emplace<armour>(helmet, 1);
+    DEBUG("loading spritesheet");
 
-    // auto torso = m_reg.create();
-    // m_reg.emplace<equipment_type>(torso, equiptype::TORSO);
-    // m_reg.emplace<visual>(torso, "SWEATER");
-    // m_reg.emplace<armour>(torso, 1);
+    size_t i;
+    m_assets->load("assets/spritesheets/link.png", i);
 
-    // auto legs = m_reg.create();
-    // m_reg.emplace<equipment_type>(legs, equiptype::LEGS);
-    // m_reg.emplace<visual>(legs, "TROUSERS");
-    // m_reg.emplace<armour>(legs, 1);
+    m_reg.emplace<player_sheet>(
+        player,
+        i
+    );
 
-    // auto mainhand = m_reg.create();
-    // m_reg.emplace<equipment_type>(mainhand, equiptype::MAINHAND);
-    // m_reg.emplace<visual>(mainhand, "SWORD");
-    // m_reg.emplace<force>(mainhand, 1, 1);
+    DEBUG("creating animation frames");
+    auto walking_frames = std::vector<animation_frame>{
+        {olc::vi2d(1,140),   olc::vi2d(45,45), 0.2f, std::vector<hitbox>()},
+        {olc::vi2d(45,140),  olc::vi2d(33,45), 0.2f, std::vector<hitbox>()},
+        {olc::vi2d(78,140),  olc::vi2d(45,45), 0.2f, std::vector<hitbox>()},
+        {olc::vi2d(123,140), olc::vi2d(33,45), 0.2f, std::vector<hitbox>()},
+    };
 
-    // auto offhand = m_reg.create();
-    // m_reg.emplace<equipment_type>(offhand, equiptype::OFFHAND);
-    // m_reg.emplace<visual>(offhand, "SHIELD");
-    // m_reg.emplace<armour>(offhand, 1);
+    auto idle_frames = std::vector<animation_frame>{
+        {olc::vi2d(1,1),   olc::vi2d(25,50), 10, std::vector<hitbox>()},
+    };
 
-    // auto ear = m_reg.create();
-    // m_reg.emplace<equipment_type>(ear, equiptype::ACCESS_HEAD);
-    // m_reg.emplace<visual>(ear, "EARRING");
-    // m_reg.emplace<willpower>(ear, 1);
+    auto attack_frames = std::vector<animation_frame>{
+        {olc::vi2d(45,140),  olc::vi2d(33,45), 0.1f, std::vector<hitbox>()},
+        {olc::vi2d(123,140), olc::vi2d(33,45), 0.1f, std::vector<hitbox>()},
+    };
 
-    // auto finger = m_reg.create();
-    // m_reg.emplace<equipment_type>(finger, equiptype::ACCESS_FINGER);
-    // m_reg.emplace<visual>(finger, "RING");
-    // m_reg.emplace<mind>(finger, 1, 1);
+    DEBUG("creating animation entities");
 
-    // auto &state = m_reg.ctx().get<EquipmentState>();
-    // state.head = helmet;
-    // state.torso = torso;
-    // state.legs = legs;
-    // state.main_hand = mainhand;
-    // state.off_hand = offhand;
-    // state.ears = ear;
-    // state.finger_left = finger;
+    auto walking_animation = m_reg.create();
+    auto idle_animation = m_reg.create();
+    auto attack_animation = m_reg.create();
 
-    // auto pants = m_reg.create();
-    // m_reg.emplace<equipment_type>(pants, equiptype::LEGS);
-    // m_reg.emplace<visual>(pants, "PANTS");
+    m_reg.emplace<animation>(
+        walking_animation,
+        i,
+        "walking",
+        (uint8_t)0,
+        0.f,
 
-    // auto ring = m_reg.create();
-    // m_reg.emplace<equipment_type>(ring, equiptype::ACCESS_FINGER);
-    // m_reg.emplace<visual>(ring, "RING1");
-    // m_reg.emplace<willpower>(ring, 110, 110);
+        walking_frames.size(),
+        walking_frames
+    );
 
-    // auto ring1 = m_reg.create();
-    // m_reg.emplace<equipment_type>(ring1, equiptype::ACCESS_FINGER);
-    // m_reg.emplace<visual>(ring1, "RING2");
-    // m_reg.emplace<willpower>(ring1, 110, 110);
+    m_reg.emplace<animation>(
+        idle_animation,
+        i,
+        "idle",
+        (uint8_t)0,
+        0.f,
 
-    // auto ring2 = m_reg.create();
-    // m_reg.emplace<equipment_type>(ring2, equiptype::ACCESS_FINGER);
-    // m_reg.emplace<visual>(ring2, "RING3");
-    // m_reg.emplace<willpower>(ring2, 110, 110);
+        idle_frames.size(),
+        idle_frames
+    );
 
-    // auto skull = m_reg.create();
-    // m_reg.emplace<equipment_type>(skull, equiptype::HEAD);
-    // m_reg.emplace<visual>(skull, "SKULL");
-    // m_reg.emplace<mind>(skull, 1, 1);
+    m_reg.emplace<animation>(
+        attack_animation,
+        i,
+        "attack",
+        (uint8_t)0,
+        0.f,
 
-    // auto ring3 = m_reg.create();
-    // m_reg.emplace<equipment_type>(ring3, equiptype::ACCESS_FINGER);
-    // m_reg.emplace<visual>(ring3, "RING4");
-    // m_reg.emplace<willpower>(ring3, 110, 110);
-    // m_reg.emplace<force>(ring3, 4, 4);
+        idle_frames.size(),
+        idle_frames
+    );
 
-    // auto horns = m_reg.create();
-    // m_reg.emplace<equipment_type>(horns, equiptype::HEAD);
-    // m_reg.emplace<visual>(horns, "HORNED HELMET");
-    // m_reg.emplace<force>(horns, 1, 1);
-    // m_reg.emplace<armour>(horns, 2, 2);
+    states.emplace_back(state {
+        .id = 0,
+        .name = "idle",
+        .on_enter = [idle_animation](entt::registry& reg, entt::entity &ent){
+            DEBUG("CHANGING TO IDLE ANIM");
+            reg.replace<current_animation>(ent, idle_animation);
+        },
+        .on_exit = [](entt::registry& reg, entt::entity &ent){},
+        .validator = [](entt::registry& reg, entt::entity &ent) // change input method
+        {
+            auto box2d = reg.get<box2d_ref>(ent);
+            auto vel = box2d.ref->GetLinearVelocity().x;
+            //DEBUG("CHECK IDLE " + std::to_string(vel));
+            return vel < 50 && vel > -50;
+        },
 
-    // auto ring4 = m_reg.create();
-    // m_reg.emplace<equipment_type>(ring4, equiptype::ACCESS_FINGER);
-    // m_reg.emplace<visual>(ring4, "RING5");
-    // m_reg.emplace<willpower>(ring4, 110, 110);
+    });
+    states.emplace_back(state {
+        .id = 1,
+        .name = "walking",
+        .on_enter = [walking_animation](entt::registry& reg, entt::entity &ent){
+            DEBUG("CHANGING TO WALKING ANIM");
+            reg.replace<current_animation>(ent, walking_animation);
+        },
+        .on_exit = [](entt::registry& reg, entt::entity &ent){},
 
-    // auto &invstate = m_reg.ctx().get<InventoryState>();
-    // invstate.equipables[equiptype::ACCESS_FINGER].emplace_back(ring);
-    // invstate.equipables[equiptype::HEAD].emplace_back(skull);
-    // invstate.equipables[equiptype::ACCESS_FINGER].emplace_back(ring1);
-    // invstate.equipables[equiptype::HEAD].emplace_back(horns);
-    // invstate.equipables[equiptype::ACCESS_FINGER].emplace_back(ring2);
-    // invstate.equipables[equiptype::LEGS].emplace_back(pants);
-    // invstate.equipables[equiptype::ACCESS_FINGER].emplace_back(ring3);
-    // invstate.equipables[equiptype::ACCESS_FINGER].emplace_back(ring4);
-    // invstate.equipables[equiptype::LEGS].emplace_back(pants);
+        .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
+            auto box2d = reg.get<box2d_ref>(ent);
+            auto vel = box2d.ref->GetLinearVelocity().x;
+            //DEBUG("CHECK WALKING " + std::to_string(vel));
+            return vel >= 50 || vel <= -50;
+        },
+    });
+    states.emplace_back(state {
+        .id = 2,
+        .name = "attack",
+        .on_enter = [attack_animation](entt::registry& reg, entt::entity &ent){
+            DEBUG("CHANGING TO WALKING ANIM");
+            reg.replace<current_animation>(ent, attack_animation);
+        },
+        .on_exit = [](entt::registry& reg, entt::entity &ent){},
 
-    // // COMBAT
-    // m_reg.emplace<_ally>(player);
-    // m_reg.emplace<visual>(player, visual{
-    //     .name = "Eirik",
-    //     .char_repr = "#"
-    // });
-    // m_reg.emplace<health>(player, 100, 100);
-    // m_reg.emplace<mana>(player, 100, 100);
-    // m_reg.emplace<armour>(player, 0, 0);
-    // m_reg.emplace<willpower>(player, 0, 0);
-    // m_reg.emplace<force>(player, 0, 0);
-    // m_reg.emplace<mind>(player, 0, 0);
-    // m_reg.emplace<affected>(player, std::vector<entt::entity>());
+        .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
+            auto box2d = reg.get<box2d_ref>(ent);
+            auto vel = box2d.ref->GetLinearVelocity().x;
+            //DEBUG("CHECK WALKING " + std::to_string(vel));
+            return false;
+        },
+    });
 
-    // auto reg_attack = m_reg.create();
-    // m_reg.emplace<visual>(reg_attack, "ATK phys");
-    // m_reg.emplace<damage>(reg_attack, 100, dmg_type::PHYSICAL);
-
-    // auto mag_attack = m_reg.create();
-    // m_reg.emplace<visual>(mag_attack, "ATK mag");
-    // m_reg.emplace<damage>(mag_attack, 100, dmg_type::MAGICAL);
+    m_reg.emplace<current_animation>(player, idle_animation);
+    m_reg.emplace<curr_state>(player, curr_state{.id=0,.name="idle"});
 
 
-    // auto pure_attack = m_reg.create();
-    // m_reg.emplace<visual>(pure_attack, "ATK pure");
-    // m_reg.emplace<damage>(pure_attack, 100, dmg_type::MAGICAL);
 
-    // // auto weakness = m_reg.create();
-    // // m_reg.emplace<_debuff>(weakness);
-    // // m_reg.emplace<visual>(weakness, "WEAKENED");
-    // // m_reg.emplace<tick>(weakness, 2);
-    // // m_reg.emplace<dmg_modifier>(weakness, (float)0.0);
 
-    // // auto bleed = m_reg.create();
-    // // m_reg.emplace<_debuff>(bleed);
-    // // m_reg.emplace<visual>(bleed, "BLEEDING");
-    // // m_reg.emplace<damage>(bleed, 10);
-    // // m_reg.emplace<tick>(bleed, 2);
 
-    // // auto bleed_attack = m_reg.create();
-    // // m_reg.emplace<visual>(bleed_attack, "Bleed atk");
-    // // m_reg.emplace<adds_debuff>(bleed_attack, bleed);
 
-    // // auto weakness_attack = m_reg.create();
-    // // m_reg.emplace<visual>(weakness_attack, "Weakness atk");
-    // // m_reg.emplace<adds_debuff>(weakness_attack, weakness);
 
-    // auto does_multiple_things_attack = m_reg.create();
-    // m_reg.emplace<visual>(does_multiple_things_attack, "ATK");
-    // m_reg.emplace<action_children>(does_multiple_things_attack, std::vector<entt::entity>{reg_attack});
 
-    // auto healing = m_reg.create();
-    // m_reg.emplace<visual>(healing, "HEAL");
-    // m_reg.emplace<heal>(healing, 20);
 
-    // auto cleanse_skill = m_reg.create();
-    // m_reg.emplace<_skill>(cleanse_skill);
-    // m_reg.emplace<_cleanse>(cleanse_skill);
 
-    // auto does_multiple_things_heal = m_reg.create();
-    // m_reg.emplace<visual>(does_multiple_things_heal, "HEAL CLEANSE");
-    // m_reg.emplace<action_children>(does_multiple_things_heal, std::vector<entt::entity>{healing, cleanse_skill});
 
-    // // FIXME set up skills tied to player system
-    // // m_reg.emplace<skill_list>(player, std::vector<skill>{
-    // //     poison{{50,"Poison"},
-    // //     10
-    // // },
-    // // });
 
-    // m_player = player;
 
-    // // TextItemOnSelect attack{
-    // //     "ATTACK",
-    // //     [=]{
-    // //         NEXT_STATE.type = type::INIT_PLAYER_SELECTING_TARGET;
-    // //         m_intended_action = does_multiple_things_attack;
-    // //     }
-    // // };
-    // // TextItemOnSelect skill{
-    // //     "SKILL",
-    // //     [&]{
-    // //         m_curr_menu = 1;
-    // //     }
-    // // };
-    // // TextItemOnSelect item{
-    // //     "ITEM",
-    // //     []{
-    // //         std::cout << "EXIT NOT IMPL" << std::endl;
-    // //     }};
-    // // TextItemOnSelect run {
-    // //     "RUN",
-    // //     [&]{
-    // //         NEXT_STATE = {state::WALKING, type::FROM_COMBAT_TRANSITION};
-    // //         std::cout << "EXIT NOT IMPL" << std::endl;
-    // //     }};
-    // // m_combatmenus.emplace_back(CombatMenu(attack, skill, item, run));
+    auto ground = m_reg.create();
 
-    // // TextItemOnSelect cleanse{
-    // // "CLEANSE",
-    // // [=]{
-    // //     NEXT_STATE.type = type::INIT_PLAYER_SELECTING_TARGET;
-    // //     m_intended_action = does_multiple_things_heal;
-    // // }};
-    // // TextItemOnSelect back{
-    // // "BACK",
-    // // [=]{
-    // //     m_curr_menu = 0;
-    // // }};
-    // // m_combatmenus.emplace_back(CombatMenu(cleanse, back));
+    b2BodyDef groundBodyDef;
+    groundBodyDef.position.Set(500.f, GetScreenSize().y-300.f);
 
-    // auto goblin = m_reg.create();
-    // m_reg.emplace<movespeed>(goblin, 0.6f);
-    // m_reg.emplace<_renderable>(goblin);
-    // m_reg.emplace<pos>(goblin, 300, 400);
-    // m_reg.emplace<simple_appearence>(goblin, "v");
-    // m_reg.emplace<dirVertical>(goblin);
-    // m_reg.emplace<dirHorisontal>(goblin);
-    // m_reg.emplace<moveTick>(goblin, 0.0f);
-    // m_reg.emplace<ai::_follow>(goblin, player);
-    // //m_reg.emplace<ai::_at_rest>(goblin);
+    auto groundBody = m_physics->CreateBody(&groundBodyDef);
 
-    // auto wall = m_reg.create();
-    // m_reg.emplace<_wall>(wall);
-    // m_reg.emplace<_renderable>(wall);
-    // m_reg.emplace<pos>(wall, 100, 100);
-    // m_reg.emplace<size>(wall, 400, 30);
-    // m_reg.emplace<_solid>(wall);
+    b2PolygonShape groundBox;
+    auto groundBodySize = b2Vec2(400.0f, 10.0f);
+    groundBox.SetAsBox(groundBodySize.x, groundBodySize.y);
+    groundBody->CreateFixture(&groundBox, 0.0f);
+
+    m_reg.emplace<box2d_ref>(ground, groundBody, groundBodySize);
+    m_reg.emplace<_renderable>(ground);
+
+
+    b2BodyDef groundBodyDef2;
+    groundBodyDef2.type = b2_kinematicBody;
+    groundBodyDef2.position.Set(1000.f, GetScreenSize().y-400.f);
+
+    auto groundBody2 = m_physics->CreateBody(&groundBodyDef2);
+
+    b2PolygonShape groundBox2;
+    auto groundBodySize2 = b2Vec2(400.0f, 10.0f);
+    groundBox2.SetAsBox(groundBodySize2.x, groundBodySize2.y);
+
+    b2FixtureDef fixtureDef2;
+    fixtureDef2.shape = &groundBox2;
+    fixtureDef2.density = 1.0f;
+    fixtureDef2.friction = 0.2f;
+
+    groundBody2->CreateFixture(&fixtureDef2);
+
+    auto ground2 = m_reg.create();
+    m_reg.emplace<box2d_ref>(ground2, groundBody2, groundBodySize2);
+    m_reg.emplace<_renderable>(ground2);
+
+    // CREATE DYNAMIC BOX
+    // b2BodyDef bodyDef;
+    // bodyDef.type = b2_dynamicBody;
+    // bodyDef.position.Set(0.f, 14.f);
+    // bodyDef.angularDamping = 100.f;
+    // body = world->CreateBody(&bodyDef);
+
+    // b2PolygonShape dynamicBox;
+    // bodySize = b2Vec2(4.0f, 6.0f);
+    // dynamicBox.SetAsBox(bodySize.x, bodySize.y);
+
+    // b2FixtureDef fixtureDef;
+    // fixtureDef.shape = &dynamicBox;
+    // fixtureDef.density = 1.f;
+    // fixtureDef.friction = 2.f;
+
+    // body->CreateFixture(&fixtureDef);
+
 
 }

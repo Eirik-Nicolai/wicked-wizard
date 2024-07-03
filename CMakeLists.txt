@@ -21,6 +21,7 @@ set(SRC_ENGINE
     src/engine/menu.cpp
     src/engine/keypress.cpp
     src/engine/initialize.cpp
+    src/engine/asset_manager.cpp
     src/engine/rendering/render.cpp
 )
 
@@ -30,6 +31,9 @@ set(SRC_UTILS
 
 set(SRC_SYSTEMS
     src/systems/logic/logic.cpp
+    src/systems/movement/moving.cpp
+    src/systems/animation/system_animation.cpp
+    src/systems/statemachine/system_statechange.cpp
 )
 
 set(SRC_GAME ${SRC_MAIN} ${SRC_ENGINE} ${SRC_UTILS} ${SRC_SYSTEMS})
