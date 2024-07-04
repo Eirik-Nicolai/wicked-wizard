@@ -16,6 +16,7 @@
 #include "types_and_defines.hpp"
 #include "components/combat.hpp"
 #include "components/assets.hpp"
+#include "components/status.hpp"
 #include "components/globals.hpp"
 #include "components/rendering.hpp"
 #include "components/statemachine.hpp"
@@ -25,6 +26,7 @@
 
 #include "systems/logic/logic.hpp"
 #include "systems/movement/moving.hpp"
+#include "systems/status/system_status.hpp"
 #include "systems/animation/system_animation.hpp"
 #include "systems/statemachine/system_statechange.hpp"
 
@@ -32,6 +34,10 @@
 
 class Game : public olc::PixelGameEngine
 {
+
+    private: // debugging
+        entt::entity status_stunned;
+
     public:
         Game();
 

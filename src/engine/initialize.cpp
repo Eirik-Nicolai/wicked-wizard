@@ -80,9 +80,11 @@ void Game::on_load_init()
         {olc::vi2d(1,1),   olc::vi2d(64,64), 10, std::vector<hitbox>()},
     };
 
-    auto attack_frames = std::vector<animation_frame>{
-        {olc::vi2d(45,140),  olc::vi2d(33,45), 0.1f, std::vector<hitbox>()},
-        {olc::vi2d(123,140), olc::vi2d(33,45), 0.1f, std::vector<hitbox>()},
+    auto stunned_frames = std::vector<animation_frame>{
+        {olc::vi2d(1,64), olc::vi2d(64,64), 0.01f, std::vector<hitbox>()},
+        {olc::vi2d(65,64), olc::vi2d(64,64), 0.01f, std::vector<hitbox>()},
+        {olc::vi2d(1,64*2), olc::vi2d(64,64), 0.01f, std::vector<hitbox>()},
+        {olc::vi2d(65,64*2), olc::vi2d(64,64), 0.01f, std::vector<hitbox>()},
     };
 
     DEBUG("creating animation entities");
@@ -92,7 +94,7 @@ void Game::on_load_init()
 
     auto idle_animation = m_reg.create();
 
-    auto attack_animation = m_reg.create();
+    auto stunned_animation = m_reg.create();
 
     m_reg.emplace<animation>(
         walking_animation_east,
@@ -129,9 +131,9 @@ void Game::on_load_init()
     );
 
     m_reg.emplace<animation>(
-        attack_animation,
+        stunned_animation,
         i_stickboy,
-        "attack",
+        "stunned",
         (uint8_t)0,
         0.f,
 
@@ -150,7 +152,7 @@ void Game::on_load_init()
                            reg.replace<current_animation>(ent, idle_animation);
                        },
                        [](entt::registry&, entt::entity &){},
-                       [](entt::registry& reg, entt::entity &ent) // change input method
+                       [](const entt::registry& reg, const entt::entity &ent) // change input method
                        {
                            auto box2d = reg.get<box2d_ref>(ent);
                            auto vel = box2d.ref->GetLinearVelocity().x;
@@ -164,7 +166,7 @@ void Game::on_load_init()
                               reg.replace<current_animation>(ent, walking_animation_east);
                           },
                           [](entt::registry&, entt::entity &){},
-                          [](entt::registry& reg, entt::entity &ent){ // change input method
+                          [](const entt::registry& reg, const entt::entity &ent){ // change input method
                               auto box2d = reg.get<box2d_ref>(ent);
                               auto vel = box2d.ref->GetLinearVelocity().x;
                               //DEBUG("CHECK WALKING " + std::to_string(vel));
@@ -177,91 +179,117 @@ void Game::on_load_init()
                               reg.replace<current_animation>(ent, walking_animation_west);
                           },
                           [](entt::registry&, entt::entity &){},
-                          [](entt::registry& reg, entt::entity &ent){ // change input method
+                          [](const entt::registry& reg, const entt::entity &ent){ // change input method
                               auto box2d = reg.get<box2d_ref>(ent);
                               auto vel = box2d.ref->GetLinearVelocity().x;
                               //DEBUG("CHECK WALKING " + std::to_string(vel));
                               return vel <= -50;
                           });
 
-    walking_west.add_termination(idle);
-    walking_east.add_termination(idle);
+    // effect damage = effect{
+    //     .name = "do_damage",
+    //     .on_enter = [](entt::registry&, entt::entity &){},
+    //     .on_exit = [](entt::registry&, entt::entity &){},
+    //     .apply = [](entt::registry&, entt::entity &){
+    //         DEBUG("DOING DAMAGE");
+    //     }
+    // };
 
-    idle.add_termination(walking_west);
-    idle.add_termination(walking_east);
+    // condition_ticking ticking = condition_ticking{
+    //     .name = "ticking_conditon",
+    //     .accum_time = 0.f,
+    //     .tick_dur = 1.f,
+    //     .tick = 0,
+    //     .max_ticks = 4,
+    // };
 
-    StateManager man = StateManager(idle, std::vector<State>{
-            idle,
-            walking_west,
-            walking_east,
-        });
+
+    // effect stun = effect{
+    //     .name = "do_damage",
+    //     .on_enter = [](entt::registry&, entt::entity &){
+
+    //     },
+    //     .on_exit = [](entt::registry&, entt::entity &){},
+    //     .apply = [](entt::registry&, entt::entity &){
+    //     }
+    // };
+
+    // condition_timed timed = condition_timed{
+    //     .name = "ticking_conditon",
+    //     .accum_time = 0.f,
+    //     .dur = 5.f
+    // };
+
+
+
+    walking_west.add_termination(STATE::IDLE);
+    walking_east.add_termination(STATE::IDLE);
+
+    idle.add_termination(STATE::WALKING_WEST);
+    idle.add_termination(STATE::WALKING_EAST);
+
+    walking_west.add_blocker(STATE::STUNNED);
+    walking_east.add_blocker(STATE::STUNNED);
+    idle.add_blocker(STATE::STUNNED);
 
     m_reg.emplace<StateManager>(
         player,
-        man
+        StateManager(idle, std::vector<State>{
+            idle,
+            walking_west,
+            walking_east,
+        })
     );
+
+    m_reg.emplace<status_manager>(
+        player,
+        std::set<entt::entity>()
+    );
+
+
+
     DEBUG(idle);
     DEBUG(walking_west);
     DEBUG(walking_east);
 
-    DEBUG(man);
-
-    // states.emplace_back(state {
-    //     .id = 0,
-    //     .name = "idle",
-    //     .on_enter = [idle_animation](entt::registry& reg, entt::entity &ent){
-    //         // DEBUG("CHANGING TO IDLE ANIM");
-    //         reg.replace<current_animation>(ent, idle_animation);
-    //     },
-    //     .on_exit = [](entt::registry& reg, entt::entity &ent){},
-    //     .validator = [](entt::registry& reg, entt::entity &ent) // change input method
-    //     {
-    //         auto box2d = reg.get<box2d_ref>(ent);
-    //         auto vel = box2d.ref->GetLinearVelocity().x;
-    //         // DEBUG("CHECK IDLE " + std::to_string(vel));
-    //         return vel < 50 && vel > -50;
-    //     },
-
-    // });
-    // states.emplace_back(state {
-    //     .id = 1,
-    //     .name = "walking",
-    //     .on_enter = [walking_animation](entt::registry& reg, entt::entity &ent){
-    //         // DEBUG("CHANGING TO WALKING ANIM");
-    //         reg.replace<current_animation>(ent, walking_animation);
-    //     },
-    //     .on_exit = [](entt::registry& reg, entt::entity &ent){},
-
-    //     .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
-    //         auto box2d = reg.get<box2d_ref>(ent);
-    //         auto vel = box2d.ref->GetLinearVelocity().x;
-    //         //DEBUG("CHECK WALKING " + std::to_string(vel));
-    //         return vel >= 50 || vel <= -50;
-    //     },
-    // });
-    // states.emplace_back(state {
-    //     .id = 2,
-    //     .name = "attack",
-    //     .on_enter = [attack_animation](entt::registry& reg, entt::entity &ent){
-    //         // DEBUG("CHANGING TO WALKING ANIM");
-    //         reg.replace<current_animation>(ent, attack_animation);
-    //     },
-    //     .on_exit = [](entt::registry& reg, entt::entity &ent){},
-
-    //     .validator = [](entt::registry& reg, entt::entity &ent){ // change input method
-    //         auto box2d = reg.get<box2d_ref>(ent);
-    //         auto vel = box2d.ref->GetLinearVelocity().x;
-    //         //DEBUG("CHECK WALKING " + std::to_string(vel));
-    //         return false;
-    //     },
-    // });
-
-    // m_reg.emplace<current_animation>(player, idle_animation);
-    // m_reg.emplace<curr_state>(player, curr_state{.id=0,.name="idle"});
 
 
-    DEBUG("Loading complete");
+    State stunned_state = State(STATE::STUNNED, "stunned",
+                          [stunned_animation](entt::registry& reg, entt::entity &ent){
+                              DEBUG("ADDING STUNNED");
+                              reg.emplace_or_replace<status_animation>(ent, stunned_animation);
+                          },
+                          [](entt::registry &reg, entt::entity &ent){
+                              DEBUG("REMOVING STUNNED");
+                              reg.remove<status_animation>(ent);
+                          }
+    );
 
+    stunned_state.add_termination(STATE::IDLE);
+    stunned_state.add_termination(STATE::WALKING_WEST);
+    stunned_state.add_termination(STATE::WALKING_EAST);
+
+    m_reg.emplace<cond_timer>(status_stunned, cond_timer{.accum_time=0, .dur=3});
+    m_reg.emplace<onadd_effect>(
+        status_stunned,
+        "add_stun_state",
+        [stunned_state](entt::registry &reg, entt::entity &affected){
+            DEBUG("ADDING STATE STUNNED");
+            reg.get<StateManager>(affected).give_state(stunned_state);
+    });
+   m_reg.emplace<continous_effect>(
+        status_stunned,
+        "add_stun_state",
+        [](entt::registry &reg, entt::entity &affected, const float &){
+            //DEBUG("WE ARE STUNNED");
+    });
+   m_reg.emplace<onremove_effect>(
+        status_stunned,
+        "add_stun_state",
+        [stunned_state](entt::registry &reg, entt::entity &affected){
+            DEBUG("REMOVE STATE STUNNED");
+            reg.get<StateManager>(affected).deactivate(stunned_state, reg, affected);
+    });
     auto ground = m_reg.create();
 
     b2BodyDef groundBodyDef;
@@ -299,23 +327,8 @@ void Game::on_load_init()
     m_reg.emplace<box2d_ref>(ground2, groundBody2, groundBodySize2);
     m_reg.emplace<_renderable>(ground2);
 
-    // CREATE DYNAMIC BOX
-    // b2BodyDef bodyDef;
-    // bodyDef.type = b2_dynamicBody;
-    // bodyDef.position.Set(0.f, 14.f);
-    // bodyDef.angularDamping = 100.f;
-    // body = world->CreateBody(&bodyDef);
 
-    // b2PolygonShape dynamicBox;
-    // bodySize = b2Vec2(4.0f, 6.0f);
-    // dynamicBox.SetAsBox(bodySize.x, bodySize.y);
-
-    // b2FixtureDef fixtureDef;
-    // fixtureDef.shape = &dynamicBox;
-    // fixtureDef.density = 1.f;
-    // fixtureDef.friction = 2.f;
-
-    // body->CreateFixture(&fixtureDef);
+    DEBUG("Loading complete");
 
 
 }

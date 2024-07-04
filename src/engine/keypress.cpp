@@ -27,6 +27,14 @@ void Game::on_userinput_walking()
         m_reg.emplace<_jump>(m_player);
     }
 
+    if (GetKey(olc::Key::S).bPressed)
+    {
+        DEBUG_SPACE()
+        DEBUG("KEYPRESS STUNNED");
+        m_reg.get<status_manager>(m_player)
+            .add_status(m_reg, m_player, status_stunned); // FIXME debugging
+    }
+
     // // OPEN INVENTORY / PAUSE GAME
     // if (GetKey(olc::Key::I).bReleased)
     // {

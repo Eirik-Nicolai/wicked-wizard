@@ -6,6 +6,10 @@
 #include "olc/olcPixelGameEngine.h"
 #include <entt/entt.hpp>
 
+struct status_animation{
+  entt::entity ent; //TODO this should be a list
+};
+
 struct current_animation{
   entt::entity ent;
 };

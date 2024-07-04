@@ -106,6 +106,11 @@ bool Game::OnUserUpdate(float dt)
 
     do_movement(m_reg);
 
+    on_condition_update(m_reg, dt);
+
+    on_effect_apply(m_reg);
+
+
     // if(follow_player)
     // {
     //     box2d_ref body;

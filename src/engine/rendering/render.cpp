@@ -33,6 +33,34 @@ void Game::render()
         DrawString({400,450}, "size: " + curr_frame.size.str());
     }
 
+    //TODO this becomes a list
+    for(auto [ent, box2d, status] : m_reg.view<box2d_ref, status_animation>().each())
+    {
+        auto anim = m_reg.get<animation>(status.ent);
+        auto pos = box2d.ref->GetPosition();
+        auto size = box2d.size;
+
+        // DEBUG("CURR ANIM " + anim.name);
+
+        auto curr_frame = anim.frames[anim.current_frame];
+
+        // DEBUG("RETRIEVING SHEET " + std::to_string(anim.sheet));
+
+        auto sheet = m_assets->get(anim.sheet).lock().get();
+
+        //DEBUG("RETRIEVING SHEET " + sheet);
+
+        tv.DrawPartialDecal(
+            screenspace(offs, pos, size),
+            sheet,
+            curr_frame.pos,
+            curr_frame.size,
+            {size.x*3,size.y*3}
+        );
+
+        DrawString({100,400}, "STATUS_ANIM " + curr_frame.pos.str());
+    }
+
     SetPixelMode(olc::Pixel::Mode::NORMAL);
 
     auto box2d = m_reg.view<box2d_ref, _renderable>();

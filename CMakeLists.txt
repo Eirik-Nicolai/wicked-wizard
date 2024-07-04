@@ -36,6 +36,7 @@ set(SRC_UTILS
 set(SRC_SYSTEMS
     src/systems/logic/logic.cpp
     src/systems/movement/moving.cpp
+    src/systems/status/system_status.cpp
     src/systems/animation/system_animation.cpp
     src/systems/statemachine/system_statechange.cpp
 )

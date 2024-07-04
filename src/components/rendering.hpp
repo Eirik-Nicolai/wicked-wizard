@@ -4,4 +4,9 @@
 
 struct _renderable{};
 
+struct debug{
+  std::string name;
+};
+
+
 #endif // RENDERING_H_

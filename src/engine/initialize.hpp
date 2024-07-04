@@ -10,6 +10,7 @@
 #include "components/logic.hpp"
 #include "components/assets.hpp"
 #include "components/combat.hpp"
+#include "components/status.hpp"
 #include "components/globals.hpp"
 #include "components/physics.hpp"
 #include "components/movement.hpp"
